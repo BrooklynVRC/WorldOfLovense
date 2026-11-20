@@ -1,0 +1,8 @@
+## Interface: 16001
+## Title: LovenseLink
+## Notes: Shows a tiny signal strip so the LovenseLink app can react to your game (damage, deaths, crits, loot, bosses...). The app only reads the screen.
+## Author: Brooklyn
+## Version: 0.1.0
+## SavedVariables: LovenseLinkDB
+
+LovenseLink.lua

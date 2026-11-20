@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Desktop host for the app (same project in both repos):
+      WoW-LovenseLink.exe            opens the app in its own window (WebView2) and runs the bundled server hidden
+      WoW-LovenseLink.exe with the capture flag: read-only window capture through Windows Graphics Capture (used by the screen reader)
+    Build properties set by scripts/package.mjs:
+      ServerExe  path of the packaged Node server to embed
+      AppInfo    path of appinfo.json (title, data folder, accent colour)
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <UseWindowsForms>true</UseWindowsForms>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyName>LovenseLinkHost</AssemblyName>
+    <RootNamespace>LovenseLinkHost</RootNamespace>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <DebugType>none</DebugType>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Vortice.Direct3D11" Version="3.6.2" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2903.40" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(ServerExe)' != ''">
+    <EmbeddedResource Include="$(ServerExe)" LogicalName="server.exe" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(AppInfo)' != ''">
+    <EmbeddedResource Include="$(AppInfo)" LogicalName="appinfo.json" />
+  </ItemGroup>
+</Project>

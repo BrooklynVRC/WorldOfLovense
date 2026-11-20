@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WoW LovenseLink</title>
+<style>
+  :root { --bg:#131116; --card:#1e1a22; --line:#322a38; --text:#eee8f0; --muted:#a59cad; --accent:#ff5c9a; --ok:#4fc98a; --bad:#ff6b6b; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.45 "Segoe UI", system-ui, sans-serif; background:var(--bg); color:var(--text); }
+  main { max-width: 900px; margin: 0 auto; padding: 24px 16px 120px; }
+  h1 { font-size: 22px; margin: 0 0 4px; } h2 { font-size: 16px; margin: 0 0 12px; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; }
+  .status { display:grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+  .stat { background:#17141a; border-radius:8px; padding:10px 12px; } .stat b { display:block; font-size:12px; color:var(--muted); font-weight:500; }
+  .dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; background:var(--bad); } .dot.on { background:var(--ok); }
+  button { background:#2d2733; color:var(--text); border:1px solid #42394a; border-radius:7px; padding:7px 12px; font:inherit; cursor:pointer; }
+  button:hover { border-color: var(--accent); }
+  .primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .stop { background:#d93838; border-color:#d93838; color:#fff; font-weight:800; font-size:18px; padding:10px 28px; letter-spacing:1px; }
+  .danger { color: var(--bad); } .small { padding:3px 9px; font-size:13px; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; margin-top: 10px; align-items:center; }
+  details.group { border:1px solid var(--line); border-radius:8px; padding: 6px 12px; margin: 8px 0; background:#18151b; }
+  details.group > summary { cursor:pointer; font-weight:600; padding: 4px 0; }
+  .field { display:grid; grid-template-columns: 220px 1fr; gap: 4px 12px; align-items:center; padding: 6px 0; border-top: 1px solid #251f2a; }
+  .field .help { grid-column: 2; color: var(--muted); }
+  p.help { color: var(--muted); margin: 4px 0 8px; font-size: 13px; }
+  input[type=text], input[type=password], input[type=number], select, textarea { width:100%; background:#100e12; color:var(--text); border:1px solid #3a3240; border-radius:6px; padding:6px 8px; font:inherit; }
+  input[type=checkbox] { width:18px; height:18px; justify-self:start; }
+  .array-item { border-left: 3px solid var(--accent); padding: 4px 0 8px 10px; margin: 8px 0; }
+  .savebar { position:fixed; left:0; right:0; bottom:0; background:#0e0c10ee; border-top:1px solid var(--line); padding: 12px 16px; display:flex; gap:12px; justify-content:center; align-items:center; }
+  #saveMsg { color: var(--muted); }
+  #log { font: 13px/1.5 Consolas, monospace; max-height: 240px; overflow:auto; background:#100e12; border-radius:8px; padding: 8px 10px; }
+  #log .bad { color: var(--bad); } #log time { color: var(--muted); margin-right: 8px; }
+  #toys { color: var(--muted); }
+  .switch { display:flex; gap:8px; align-items:center; font-weight:600; }
+  @media (max-width: 600px) { .field { grid-template-columns: 1fr; } .field .help { grid-column: 1; } }
+
+  .gs { display:grid; gap:8px; }
+  .gs .st { display:flex; gap:12px; align-items:flex-start; padding:10px 12px; border-radius:8px; background:#131820; border:1px solid transparent; }
+  .gs .st.next { border-color: var(--accent); }
+  .gs .n { width:26px; height:26px; flex:none; border-radius:50%; display:grid; place-items:center; font-weight:700; background:#2a2e3a; }
+  .gs .st.done .n { background: var(--ok); color:#06150d; }
+  .gs .tx { flex:1; } .gs .tx > b { display:block; } .gs .tx > span { color: var(--muted); font-size: 13px; }
+  .gs code { user-select: all; }
+  .copy { margin-left:6px; padding:1px 8px; font-size:12px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>WoW LovenseLink</h1>
+  <p class="sub">Your toy reacts to World of Warcraft: damage, deaths, crits, loot, level ups and bosses. The LovenseLink addon shows a tiny colour strip in the top-left corner and this app reads it from the screen.</p>
+
+  <section class="card">
+    <div class="row" style="margin-top:0">
+      <button class="stop" onclick="post('/api/stop')">■ STOP</button>
+      <label class="switch"><input type="checkbox" id="master"> Enabled</label>
+    </div>
+    <div class="status" style="margin-top:14px">
+      <div class="stat"><b>Lovense app</b><span id="sLovense">…</span></div>
+      <div class="stat"><b>World of Warcraft</b><span id="sGame">…</span></div>
+      <div class="stat"><b>Last event</b><span id="sLast">…</span></div>
+      <div class="stat"><b>Queue</b><span id="sQueue">…</span></div>
+    </div>
+    <div class="row"><button onclick="findToys()">Find toys</button><span id="toys"></span></div>
+    <div id="hint" style="display:none;margin-top:10px;padding:10px 12px;border-radius:8px;background:#2b2414;border:1px solid #5a4a20;color:#f6dfa4"></div>
+    <p class="help">Settings folder: <code id="dataDir"></code> · <span id="version"></span></p>
+  </section>
+
+  <section class="card">
+    <h2>Getting started</h2>
+    <div class="gs" id="gs"></div>
+  </section>
+
+  <section class="card">
+    <h2>Test</h2>
+    <p class="help">Each button plays that event's action, so you can feel it without playing. In game, <code>/ll test</code> checks the whole path (addon → screen → app → toy).</p>
+    <div class="row" id="gameTests"></div>
+  </section>
+
+  <section class="card">
+    <h2>Activity</h2>
+    <div id="log">Nothing yet.</div>
+  </section>
+
+  <section class="card">
+    <h2>Settings</h2>
+    <div id="form"></div>
+  </section>
+</main>
+<div class="savebar"><span id="saveMsg">No changes</span><button class="primary" id="saveBtn">Save settings</button></div>
+
+<script src="/ui.js"></script>
+<script>
+  let cfg = null, dirty = false;
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  async function post(url, data) {
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data || {}) });
+    setTimeout(refresh, 150); return r.json().catch(() => ({}));
+  }
+  const dot = (on, text) => `<span class="dot ${on ? 'on' : ''}"></span>${esc(text)}`;
+
+  function copy(text, btn) { navigator.clipboard?.writeText(text).then(() => { const o = btn.textContent; btn.textContent = 'Copied ✓'; setTimeout(() => (btn.textContent = o), 1500); }); }
+  function steps(list) {
+    const next = list.findIndex((s) => !s.done && !s.optional);
+    document.getElementById('gs').innerHTML = list.map((s, i) => `<div class="st ${s.done ? 'done' : ''} ${i === next ? 'next' : ''}"><div class="n">${s.done ? '✓' : i + 1}</div><div class="tx"><b>${s.title}${s.optional ? ' <span>(optional)</span>' : ''}</b><span>${s.done ? (s.doneText || 'Done.') : s.how}</span></div></div>`).join('');
+  }
+  async function refresh() {
+    const s = await fetch('/api/status').then((r) => r.json()).catch(() => null);
+    if (!s) return;
+    steps([
+      { title: 'Connect your toy', done: s.lovense.ok, doneText: s.lovense.status, how: s.lovense.output === 'intiface'
+        ? 'Open <b>Intiface Central</b>, press <b>Start Server</b>, and connect your toy on its Devices tab. This app connects to it by itself.'
+        : 'Choose how to reach your toy in the settings below. <b>Lovense Remote:</b> connect your toy, turn on <b>Game Mode</b>, type its Local IP and Port into "1a. Lovense Remote", Save, then <b>Find toys</b>. <b>Intiface Central</b> (any brand): pick it under "How to reach your toy" and Save.' },
+      { title: 'Install the LovenseLink addon', done: s.game.stripSeen, doneText: 'The addon is running in WoW.', how: 'Copy the <b>LovenseLink</b> folder into <code>World of Warcraft\\_forever_\\Interface\\AddOns</code>, then tick it in the AddOns list on the character screen.' },
+      { title: 'Open World of Warcraft', done: s.game.capturing, doneText: 'WoW is being read.', how: 'Log in to a character. Windowed or fullscreen both work; WoW can be behind other windows but not minimized.' },
+      { title: 'Try it', optional: true, done: !!s.game.lastEvent, doneText: 'Events are coming through.', how: 'Type <code>/ll test</code> in the WoW chat. Your toy should buzz. Change strengths in "3. What happens in the game".' },
+    ]);
+    $('master').checked = s.enabled;
+    $('dataDir').textContent = s.dataDir; $('version').textContent = 'v' + s.version;
+    const l = s.lovense;
+    $('sLovense').innerHTML = dot(l.ok, (l.output === 'intiface' ? 'Intiface: ' : 'Lovense Remote: ') + l.status);
+    const g = s.game;
+    $('sGame').innerHTML = dot(g.stripSeen, g.status);
+    $('sLast').textContent = g.lastEvent ? `${g.lastEvent} · ${new Date(g.lastEventAt).toLocaleTimeString()}` : 'nothing yet';
+    const hint = g.capturing && !g.stripSeen ? g.status : '';
+    $('hint').style.display = hint ? 'block' : 'none'; $('hint').textContent = hint;
+    $('sQueue').textContent = `${l.busy ? 'playing' : 'idle'} · ${l.queue} queued`;
+    $('log').innerHTML = s.log.length ? s.log.map((x) => `<div class="${x.ok ? '' : 'bad'}"><time>${new Date(x.ts).toLocaleTimeString()}</time>${esc(x.label)}: ${esc(x.detail)}</div>`).join('') : 'Nothing yet.';
+  }
+  async function findToys() {
+    $('toys').textContent = 'Looking…';
+    const r = await post('/api/toys');
+    $('toys').textContent = r.toys ? (r.toys.length ? r.toys.map((t) => `${t.nickName || t.name} (id ${t.id}${t.battery != null ? ', ' + t.battery + '%' : ''})`).join(', ') : 'Connected, but no toys found.') : (r.error || 'Failed');
+  }
+  $('master').onchange = (e) => { if (cfg) cfg.enabled = e.target.checked; post('/api/enabled', { enabled: e.target.checked }); };
+
+  function buildTests() {
+    $('gameTests').innerHTML = '';
+    for (const e of events) {
+      if (e.key === 'damage') {
+        for (const [n, i] of [['small hit', 2], ['big hit', 10], ['huge hit', 15]]) $('gameTests').append(SettingsUI.el('button', { class: 'small', onclick: () => post('/api/test', { key: 'damage', intensity: i }) }, 'Damage: ' + n));
+      } else $('gameTests').append(SettingsUI.el('button', { class: 'small', onclick: () => post('/api/test', { key: e.key }) }, e.label));
+    }
+  }
+  function changed() { dirty = true; $('saveMsg').textContent = 'Unsaved changes'; }
+  $('saveBtn').onclick = async () => {
+    const r = await post('/api/config', cfg);
+    if (r.ok) { cfg = r.config; dirty = false; $('saveMsg').textContent = 'Saved ✓'; SettingsUI.render($('form'), cfg, hints, changed); buildTests(); }
+    else $('saveMsg').textContent = 'Save failed: ' + (r.error || 'unknown');
+  };
+  window.addEventListener('beforeunload', (e) => { if (dirty) e.preventDefault(); });
+  let hints = {}, events = [];
+  fetch('/api/config').then((r) => r.json()).then((d) => { cfg = d.config; hints = d.hints; events = d.events; SettingsUI.render($('form'), cfg, hints, changed); buildTests(); });
+  refresh(); setInterval(refresh, 2000);
+</script>
+</body>
+</html>
