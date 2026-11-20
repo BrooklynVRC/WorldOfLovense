@@ -123,7 +123,7 @@
     const l = s.lovense;
     $('sLovense').innerHTML = dot(l.ok, (l.output === 'intiface' ? 'Intiface: ' : 'Lovense Remote: ') + l.status);
     const g = s.game;
-    $('sGame').innerHTML = dot(g.stripSeen, g.status);
+    $('sGame').innerHTML = dot(g.stripSeen, g.status + (g.health !== null ? ' · health ' + g.health + '%' : ''));
     $('sLast').textContent = g.lastEvent ? `${g.lastEvent} · ${new Date(g.lastEventAt).toLocaleTimeString()}` : 'nothing yet';
     const hint = g.capturing && !g.stripSeen ? g.status : '';
     $('hint').style.display = hint ? 'block' : 'none'; $('hint').textContent = hint;

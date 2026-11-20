@@ -5,7 +5,7 @@ import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { createInterface } from 'node:readline';
 
 export interface Rgb { w: number; h: number; px: Uint8Array } // 3 bytes per pixel, top-down
-export interface Signal { seq: number; code: number; intensity: number }
+export interface Signal { seq: number; code: number; intensity: number; health: number | null }
 
 /** Decodes a 24-bit bottom-up BMP (what the capture helper sends) into top-down RGB. */
 export function decodeBmpRgb(buf: Buffer): Rgb {
@@ -37,7 +37,21 @@ function tryAt(img: Rgb, x: number, y: number, size: number): Signal | null {
   const [r2, g2, b2] = sample(1), [r3, g3, b3] = sample(2);
   const intensity = level(r3);
   if (level(g3) !== 15 - intensity || level(b3) !== 8) return null; // check square
-  return { seq: level(r2), code: level(g2) * 16 + level(b2), intensity };
+  return { seq: level(r2), code: level(g2) * 16 + level(b2), intensity, health: readHealth(img, x + 4 * size, cy, size * BAR) };
+}
+
+const BAR = 8; // health bar width in squares (LovenseLink.lua)
+/** Fraction of the health bar that is filled (white on black), or null if it's cut off / not there. */
+function readHealth(img: Rgb, x0: number, y: number, width: number): number | null {
+  if (x0 + width > img.w) return null;
+  let filled = 0, junk = 0;
+  for (let x = x0; x < x0 + width; x++) {
+    const [r, g, b] = at(img, x, y), v = (r + g + b) / 3, spread = Math.max(r, g, b) - Math.min(r, g, b);
+    if (spread > 60) junk++;               // neither white nor black: not our bar
+    else filled += Math.min(1, Math.max(0, v / 255)); // edge pixels count partly
+  }
+  if (junk > width * 0.1) return null;
+  return Math.min(1, filled / width);
 }
 
 /** Finds the strip and decodes it, or null if it isn't visible / fails its checks. */
@@ -85,7 +99,7 @@ export class CornerCapture {
       const timer = setTimeout(() => { reject(new Error('capture timed out')); this.close(); }, 4000);
       this.waiting.push({ resolve: (b) => { clearTimeout(timer); try { resolve(decodeBmpRgb(b)); } catch (e) { reject(e as Error); } }, reject: (e) => { clearTimeout(timer); reject(e); } });
       // Tiny main picture (unused) + the corner at full resolution.
-      this.proc!.stdin.write('cap 64 0 0 0.08 0.06\n');
+      this.proc!.stdin.write('cap 64 0 0 0.15 0.06\n');
     });
   }
 

@@ -3,6 +3,7 @@ import { DATA_DIR, EVENTS, HINTS, actionFor, loadConfig, saveConfig, type Config
 import { VERSION, captureExe, pauseIfPackaged, readAsset, showUi } from './runtime.js';
 import { Lovense } from './lovense.js';
 import { CornerCapture, readStrip, type Signal } from './strip.js';
+import { HealthWatch } from './health.js';
 
 let config: Config = loadConfig();
 const toy = new Lovense(() => config);
@@ -17,24 +18,32 @@ const game = {
   lastSeen: 0,
   lastEvent: '',
   lastEventAt: 0,
+  health: null as number | null, // % read from the addon's health bar
 };
 let lastSeq = -1;
 let capture: CornerCapture | null = null;
 let loop: NodeJS.Timeout | null = null;
 
+const health = new HealthWatch();
+function play(code: number, intensity: number) {
+  const ev = EVENTS.find((e) => e.code === code);
+  game.lastEvent = ev ? ev.label : `unknown event ${code}`;
+  game.lastEventAt = Date.now();
+  if (!config.enabled) return;
+  const a = actionFor(config, code, intensity);
+  if (a) toy.play(a.action, a.label);
+}
+
 function onSignal(s: Signal) {
   game.lastSeen = Date.now();
   game.stripSeen = true;
+  game.health = s.health === null ? null : Math.round(s.health * 100);
+  for (const h of health.update(s.health, Date.now())) play(h.key === 'damage' ? 4 : 5, h.key === 'damage' ? h.intensity : 12);
   if (s.seq === lastSeq) return;
   const first = lastSeq === -1;
   lastSeq = s.seq;
   if (first || s.code === 0) return; // what was already on screen when we started, or the addon's "loaded" state
-  const ev = EVENTS.find((e) => e.code === s.code);
-  game.lastEvent = ev ? ev.label : `unknown event ${s.code}`;
-  game.lastEventAt = Date.now();
-  if (!config.enabled) return;
-  const a = actionFor(config, s.code, s.intensity);
-  if (a) toy.play(a.action, a.label);
+  play(s.code, s.intensity);
 }
 
 function startReading() {
@@ -48,12 +57,13 @@ function startReading() {
       game.capturing = true;
       const s = readStrip(img);
       if (s) onSignal(s);
+      if (!s) health.reset();
       if (Date.now() - game.lastSeen > 3000) {
-        game.stripSeen = false;
+        game.stripSeen = false; game.health = null;
         game.status = 'WoW found, but no LovenseLink strip in the top-left corner. Is the addon enabled? Try /reload.';
       } else game.status = 'reading WoW';
     } catch (e) {
-      game.capturing = false; game.stripSeen = false;
+      game.capturing = false; game.stripSeen = false; game.health = null; health.reset();
       game.status = (e as Error).message;
       lastSeq = -1;
       await new Promise((r) => setTimeout(r, 1500)); // window closed / minimized: check again a bit slower

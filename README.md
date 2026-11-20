@@ -1,10 +1,10 @@
 # WoW LovenseLink
 
-Your Lovense toy (or any toy Intiface Central supports) reacts to **World of Warcraft Forever**: taking damage, low health, dying, crits, killing blows, level ups, quest turn-ins, rare/epic/legendary loot, honorable kills, boss pulls, kills and wipes.
+Your Lovense toy (or any toy Intiface Central supports) reacts to **World of Warcraft Forever**: taking damage, low health, dying, level ups, quest turn-ins, rare/epic/legendary loot, honorable kills, boss pulls, kills and wipes.
 
 There are two parts:
 
-- **LovenseLink addon**: a normal WoW addon. When something happens, it shows a tiny 4-square colour strip in the top-left corner of the screen (32×8 pixels).
+- **LovenseLink addon**: a normal WoW addon. When something happens, it shows a tiny colour strip in the top-left corner of the screen (96×8 pixels, including a little health bar).
 - **WoW-LovenseLink.exe**: reads that strip from the WoW window and drives your toy.
 
 WoW addons cannot talk to other programs, so the event leaves the game as pixels on screen. The app only *reads* the window picture, the same way OBS or Discord screen share do. It never touches the game's memory or files and never sends keys or clicks.
@@ -35,13 +35,14 @@ The big **STOP** button in the app stops the toy immediately. Closing the app al
 | --- | --- | --- |
 | Taking damage | on | strength scales with how much of your health the hits took (added up over half a second, ignored under 2%) |
 | Low health | on | under 25%, re-arms above 40% |
-| You died / Killed by a player | on | "by a player" when a player hit you in the last 5 seconds |
-| Crit | on | at most once a second |
-| Killing blow, Honorable kill | on | |
+| You died | on | |
+| Honorable kill | on | |
 | Level up, Quest turned in | on | |
 | Loot rare / epic / legendary | on | only your own loot |
 | Boss pulled / killed / Wipe | on | dungeon and raid encounters |
 | Entering / leaving combat, Resurrected | off | |
+
+WoW Forever uses the Midnight addon rules: addons can't read the combat log, and your exact health is hidden from them. So the addon puts your health in a small bar next to the strip (the same way your unit frame shows it, without the addon ever reading the number), and the app works out damage and low health by measuring that bar. Crits, killing blows and "killed by a player" need the combat log, so they aren't available.
 
 Every event has its own action (constant, preset, or custom pattern; strength 0–20; duration) under **3. What happens in the game**, plus global safety limits.
 
